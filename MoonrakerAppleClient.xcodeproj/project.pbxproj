@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B8D38A832CC033ED00878FB1 /* AnyCodable in Frameworks */ = {isa = PBXBuildFile; productRef = B8D38A822CC033ED00878FB1 /* AnyCodable */; };
+		B8D38A862CC0341600878FB1 /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = B8D38A852CC0341600878FB1 /* Starscream */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		B8D38A702CC02F6100878FB1 /* MoonrakerAppleClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MoonrakerAppleClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B8D38A832CC033ED00878FB1 /* AnyCodable in Frameworks */,
+				B8D38A862CC0341600878FB1 /* Starscream in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +72,8 @@
 			);
 			name = MoonrakerAppleClient;
 			packageProductDependencies = (
+				B8D38A822CC033ED00878FB1 /* AnyCodable */,
+				B8D38A852CC0341600878FB1 /* Starscream */,
 			);
 			productName = MoonrakerAppleClient;
 			productReference = B8D38A702CC02F6100878FB1 /* MoonrakerAppleClient.app */;
@@ -94,6 +103,10 @@
 			);
 			mainGroup = B8D38A672CC02F6100878FB1;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B8D38A812CC033ED00878FB1 /* XCRemoteSwiftPackageReference "AnyCodable" */,
+				B8D38A842CC0341600878FB1 /* XCRemoteSwiftPackageReference "Starscream" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B8D38A712CC02F6100878FB1 /* Products */;
 			projectDirPath = "";
@@ -324,6 +337,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B8D38A812CC033ED00878FB1 /* XCRemoteSwiftPackageReference "AnyCodable" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Flight-School/AnyCodable";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.6.7;
+			};
+		};
+		B8D38A842CC0341600878FB1 /* XCRemoteSwiftPackageReference "Starscream" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/daltoniam/Starscream";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.8;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B8D38A822CC033ED00878FB1 /* AnyCodable */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B8D38A812CC033ED00878FB1 /* XCRemoteSwiftPackageReference "AnyCodable" */;
+			productName = AnyCodable;
+		};
+		B8D38A852CC0341600878FB1 /* Starscream */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B8D38A842CC0341600878FB1 /* XCRemoteSwiftPackageReference "Starscream" */;
+			productName = Starscream;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B8D38A682CC02F6100878FB1 /* Project object */;
 }
