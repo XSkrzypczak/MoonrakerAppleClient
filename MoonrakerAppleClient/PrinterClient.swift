@@ -34,7 +34,7 @@ class PrinterClient: WebSocketDelegate {
             isConnected = false
             print("websocket is disconnected: \(reason) with code: \(code)")
         case .text(let string):
-            handleTextResponse(string)
+            handleResponse(string)
             break
         case .binary(let data):
             print("Received data: \(data.count)")
@@ -82,5 +82,9 @@ class PrinterClient: WebSocketDelegate {
     func sendRequest(method: String, params: [String: AnyCodable]? = nil, id: Int) async {
         let request =  JsonRpcRequest(method: method, params: params, id: id)
         socket.write(data: Data(try! JSONEncoder().encode(request)))
+    }
+    
+    func handleResponse(_ response: String) {
+        print("Received data: \(response.count)")
     }
 }
