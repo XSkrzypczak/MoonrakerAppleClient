@@ -12,9 +12,16 @@ struct ContentView: View {
     var body: some View {
         Button("Test") {
             Task {
-                //Home X axis and get server info
-                await printer.sendRequest(method: "printer.gcode.script", params: ["script": "G28 X"], id: 7466)
-                await printer.sendRequest(method: "server.info", id: 7465)
+                do {
+                    try await printer.sendRequest(method: "printer.gcode.script", params: ["script": "G28 X"], id: 7466)
+                } catch {
+                    print("gcode error: \(error)")
+                }
+                do {
+                    print(try await printer.getRequest(method: "server.info", id: 7465))
+                } catch {
+                    print("server info error: \(error)")
+                }
             }
         }
         .padding()

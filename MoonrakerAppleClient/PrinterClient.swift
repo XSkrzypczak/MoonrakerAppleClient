@@ -14,7 +14,11 @@ class PrinterClient: WebSocketDelegate {
     private let url: URL
     var isConnected: Bool = false
     
-    private var pendingRequests: [Int: CheckedContinuation<Data, Error>] = [:] // For storing pending requests
+    //store responses we wait for
+    private var expectedResponses: [Int: CheckedContinuation<Any, Error>] = [:]
+    //store request we want to send
+    private var pendingRequests: [Int: CheckedContinuation<Void, Error>] = [:]
+    
     
     init(url: URL) {
         self.url = url
@@ -65,6 +69,7 @@ class PrinterClient: WebSocketDelegate {
             }
         }
     }
+    
     struct JsonRpcRequest: Codable {
         private let jsonrpc: String
         let method: String
@@ -79,12 +84,76 @@ class PrinterClient: WebSocketDelegate {
         }
     }
     
-    func sendRequest(method: String, params: [String: AnyCodable]? = nil, id: Int) async {
-        let request =  JsonRpcRequest(method: method, params: params, id: id)
-        socket.write(data: Data(try! JSONEncoder().encode(request)))
+    struct JsonRpcResponse: Codable {
+        let jsonrpc: String
+        let result: AnyCodable
+        let id: Int
+    }
+    
+    struct JsonRpcError: Codable, Error {
+        let jsonrpc: String
+        let error: ErrorDetails
+        let id: Int
+        
+        struct ErrorDetails: Codable, Error {
+            let code: Int
+            let message: String
+        }
+    }
+    
+    //use only for sending requests where respons is "ok" or is not used
+    func sendRequest(method: String, params: [String: AnyCodable]? = nil, id: Int) async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            pendingRequests[id] = continuation
+            let request = JsonRpcRequest(method: method, params: params, id: id)
+            do {
+                let requestData = try JSONEncoder().encode(request)
+                socket.write(data: requestData)
+            } catch {
+                // If encoding fails, remove the pending request and resume with an error
+                pendingRequests.removeValue(forKey: id)
+                continuation.resume(throwing: error)
+            }
+        }
+    }
+    
+    func getRequest(method: String, params: [String: AnyCodable]? = nil, id: Int) async throws -> Any {
+        return try await withCheckedThrowingContinuation { continuation in
+            expectedResponses[id] = continuation
+            Task {
+                do {
+                    try await sendRequest(method: method, params: params, id: id)
+                } catch {
+                    expectedResponses.removeValue(forKey: id)
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
     }
     
     func handleResponse(_ response: String) {
-        print("Received data: \(response.count)")
+        guard let data = response.data(using: .utf8) else {
+            print("Invalid UTF-8 data received")
+            return
+        }
+        //try to decode response and match it to request/response we wait for. if it fails throw an error to SendRequest
+        do {
+            // Try to decode the response as a JSON-RPC response, if it fails decode as a JSON-RPC error
+            if let json = try? JSONDecoder().decode(JsonRpcResponse.self, from: data) {
+                if let continuation = expectedResponses[json.id] {
+                    continuation.resume(returning: json.result.value)
+                    expectedResponses.removeValue(forKey: json.id)
+                } else if let continuation = pendingRequests[json.id] {
+                    pendingRequests.removeValue(forKey: json.id)
+                    continuation.resume()
+                }
+            } else if let json = try? JSONDecoder().decode(JsonRpcError.self, from: data) {
+                //we can pass error only to sendRequest because it will pass it to getRequest if used
+                if let continuation = pendingRequests[json.id] {
+                    continuation.resume(throwing: json.error)
+                    pendingRequests.removeValue(forKey: json.id)
+                }
+            }
+        }
     }
 }
