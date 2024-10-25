@@ -13,7 +13,7 @@ class PrinterClient: WebSocketDelegate {
     private let socket: WebSocket
     private let url: URL
     var isConnected: Bool = false
-    
+    var canSendRequest: Bool = false
     //store responses we wait for
     private var expectedResponses: [Int: CheckedContinuation<Any, Error>] = [:]
     //store request we want to send
@@ -33,10 +33,15 @@ class PrinterClient: WebSocketDelegate {
         switch event {
         case .connected(let headers):
             isConnected = true
+            canSendRequest = true
             print("websocket is connected: \(headers)")
         case .disconnected(let reason, let code):
             isConnected = false
-            print("websocket is disconnected: \(reason) with code: \(code)")
+            canSendRequest = false
+            for continuation in expectedResponses {
+                continuation.value.resume(throwing: WebSocketEvent.disconnected(reason, code) as! Error)
+                expectedResponses.removeAll()
+            }
         case .text(let string):
             handleResponse(string)
             break
@@ -103,17 +108,23 @@ class PrinterClient: WebSocketDelegate {
     
     //use only for sending requests where respons is "ok" or is not used
     func sendRequest(method: String, params: [String: AnyCodable]? = nil, id: Int) async throws {
-        return try await withCheckedThrowingContinuation { continuation in
-            pendingRequests[id] = continuation
-            let request = JsonRpcRequest(method: method, params: params, id: id)
-            do {
-                let requestData = try JSONEncoder().encode(request)
-                socket.write(data: requestData)
-            } catch {
-                // If encoding fails, remove the pending request and resume with an error
-                pendingRequests.removeValue(forKey: id)
-                continuation.resume(throwing: error)
+        if canSendRequest {
+            return try await withCheckedThrowingContinuation { continuation in
+                pendingRequests[id] = continuation
+                let request = JsonRpcRequest(method: method, params: params, id: id)
+                do {
+                    let requestData = try JSONEncoder().encode(request)
+                    socket.write(data: requestData)
+                    canSendRequest = false
+                } catch {
+                    // If encoding fails, remove the pending request and resume with an error
+                    pendingRequests.removeValue(forKey: id)
+                    continuation.resume(throwing: error)
+                }
             }
+        }
+        else {
+            throw NSError(domain: "PrinterClient", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot send request"])
         }
     }
     
@@ -136,12 +147,17 @@ class PrinterClient: WebSocketDelegate {
             print("Invalid UTF-8 data received")
             return
         }
+        print(response)
         //try to decode response and match it to request/response we wait for. if it fails throw an error to SendRequest
         do {
             // Try to decode the response as a JSON-RPC response, if it fails decode as a JSON-RPC error
             if let json = try? JSONDecoder().decode(JsonRpcResponse.self, from: data) {
                 if let continuation = expectedResponses[json.id] {
                     continuation.resume(returning: json.result.value)
+                    if let continuation = pendingRequests[json.id] {
+                        pendingRequests.removeValue(forKey: json.id)
+                        continuation.resume()
+                    }
                     expectedResponses.removeValue(forKey: json.id)
                 } else if let continuation = pendingRequests[json.id] {
                     pendingRequests.removeValue(forKey: json.id)
@@ -154,6 +170,7 @@ class PrinterClient: WebSocketDelegate {
                     pendingRequests.removeValue(forKey: json.id)
                 }
             }
+            canSendRequest = true
         }
     }
 }
