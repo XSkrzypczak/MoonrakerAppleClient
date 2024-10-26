@@ -9,7 +9,7 @@ import Foundation
 import Starscream
 import AnyCodable
 
-class PrinterClient: WebSocketDelegate {
+class PrinterClient: WebSocketDelegate, ObservableObject {
     private let socket: WebSocket
     private let url: URL
     var isConnected: Bool = false
@@ -19,6 +19,10 @@ class PrinterClient: WebSocketDelegate {
     //store request we want to send
     private var pendingRequests: [Int: CheckedContinuation<Void, Error>] = [:]
     
+    //printer info -- status, temp etc.
+    //get info from printer.info
+    @Published var klippyStatus: KlippyStatus = .ready
+    
     
     init(url: URL) {
         self.url = url
@@ -27,6 +31,66 @@ class PrinterClient: WebSocketDelegate {
         socket = WebSocket(request: request)
         socket.delegate = self
         socket.connect()
+    }
+    
+    enum KlippyStatus {
+        case ready
+        case shutdown
+        case disconnected
+        
+        var description: String {
+            switch self {
+            case .ready:
+                return "Ready"
+            case .shutdown:
+                return "Shutdown"
+            case .disconnected:
+                return "Disconnected"
+            }
+        }
+    }
+    
+    struct JsonRpcRequest: Codable {
+        private let jsonrpc: String
+        let method: String
+        let params: [String: AnyCodable]?
+        let id: Int
+        
+        init(method: String, params: [String: AnyCodable]?, id: Int) {
+            self.jsonrpc = "2.0"
+            self.method = method
+            self.params = params
+            self.id = id
+        }
+    }
+    
+    struct JsonRpcResponse: Codable {
+        let jsonrpc: String
+        let result: AnyCodable
+        let id: Int
+    }
+    
+    struct JsonRpcError: Codable, Error {
+        let jsonrpc: String
+        let error: ErrorDetails
+        let id: Int
+        
+        struct ErrorDetails: Codable, Error {
+            let code: Int
+            let message: String
+        }
+    }
+    
+    struct JsonRpcNotification: Codable {
+        let jsonrpc: String
+        let method: String
+        let params: AnyCodable?
+        
+        init(jsonrpc: String, method: String, params: AnyCodable?) {
+            self.jsonrpc = jsonrpc
+            self.method = method
+            self.params = params
+        }
     }
     
     func didReceive(event: Starscream.WebSocketEvent, client: Starscream.WebSocketClient) {
@@ -75,37 +139,6 @@ class PrinterClient: WebSocketDelegate {
         }
     }
     
-    struct JsonRpcRequest: Codable {
-        private let jsonrpc: String
-        let method: String
-        let params: [String: AnyCodable]?
-        let id: Int
-        
-        init(method: String, params: [String: AnyCodable]?, id: Int) {
-            self.jsonrpc = "2.0"
-            self.method = method
-            self.params = params
-            self.id = id
-        }
-    }
-    
-    struct JsonRpcResponse: Codable {
-        let jsonrpc: String
-        let result: AnyCodable
-        let id: Int
-    }
-    
-    struct JsonRpcError: Codable, Error {
-        let jsonrpc: String
-        let error: ErrorDetails
-        let id: Int
-        
-        struct ErrorDetails: Codable, Error {
-            let code: Int
-            let message: String
-        }
-    }
-    
     //use only for sending requests where respons is "ok" or is not used
     func sendRequest(method: String, params: [String: AnyCodable]? = nil, id: Int) async throws {
         if canSendRequest {
@@ -115,6 +148,7 @@ class PrinterClient: WebSocketDelegate {
                 do {
                     let requestData = try JSONEncoder().encode(request)
                     socket.write(data: requestData)
+                    print("sent \(request)")
                     canSendRequest = false
                 } catch {
                     // If encoding fails, remove the pending request and resume with an error
@@ -147,7 +181,6 @@ class PrinterClient: WebSocketDelegate {
             print("Invalid UTF-8 data received")
             return
         }
-        print(response)
         //try to decode response and match it to request/response we wait for. if it fails throw an error to SendRequest
         do {
             // Try to decode the response as a JSON-RPC response, if it fails decode as a JSON-RPC error
@@ -163,14 +196,31 @@ class PrinterClient: WebSocketDelegate {
                     pendingRequests.removeValue(forKey: json.id)
                     continuation.resume()
                 }
+                canSendRequest = true
             } else if let json = try? JSONDecoder().decode(JsonRpcError.self, from: data) {
                 //we can pass error only to sendRequest because it will pass it to getRequest if used
                 if let continuation = pendingRequests[json.id] {
                     continuation.resume(throwing: json.error)
                     pendingRequests.removeValue(forKey: json.id)
                 }
+                canSendRequest = true
             }
-            canSendRequest = true
+            //notification handling
+            else if let json = try? JSONDecoder().decode(JsonRpcNotification.self, from: data) {
+                if let method = json.method as String? {
+                    print("Notification: \(method)")
+                    switch method {
+                    case "notify_klippy_ready":
+                        klippyStatus = .ready
+                    case "notify_klippy_shutdown":
+                        klippyStatus = .shutdown
+                    case "notify_klippy_disconnected":
+                        klippyStatus = .disconnected
+                    default :
+                        break
+                    }
+                }
+            }
         }
     }
 }
