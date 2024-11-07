@@ -1,5 +1,5 @@
 //
-//  PrinterClient.swift
+//  Printer.swift
 //  MoonrakerAppleClient
 //
 //  Created by Mikolaj Skrzypczak on 16/10/2024.
@@ -7,21 +7,22 @@
 
 import Foundation
 import Starscream
+//TODO: fork AnyCodable and add privacy manifest
 import AnyCodable
 
-class PrinterClient: WebSocketDelegate, ObservableObject {
+class Printer: WebSocketDelegate, ObservableObject {
     private let socket: WebSocket
     private let url: URL
     var isConnected: Bool = false
     var canSendRequest: Bool = false
     //store responses we wait for
-    private var expectedResponses: [Int: CheckedContinuation<Any, Error>] = [:]
+    private var expectedResponses: [Int: CheckedContinuation<AnyCodable, Error>] = [:]
     //store request we want to send
     private var pendingRequests: [Int: CheckedContinuation<Void, Error>] = [:]
     
-    //printer info -- status, temp etc.
-    //get info from printer.info
-    @Published var klippyStatus: KlippyStatus = .ready
+    //store printer info
+    @Published var klippyStatus: KlippyStatus = .null
+    @Published var stateMessage: String = "null"
     
     
     init(url: URL) {
@@ -37,6 +38,7 @@ class PrinterClient: WebSocketDelegate, ObservableObject {
         case ready
         case shutdown
         case disconnected
+        case null
         
         var description: String {
             switch self {
@@ -46,6 +48,8 @@ class PrinterClient: WebSocketDelegate, ObservableObject {
                 return "Shutdown"
             case .disconnected:
                 return "Disconnected"
+            case .null:
+                return "null"
             }
         }
     }
@@ -53,7 +57,7 @@ class PrinterClient: WebSocketDelegate, ObservableObject {
     struct JsonRpcRequest: Codable {
         private let jsonrpc: String
         let method: String
-        let params: [String: AnyCodable]?
+        let params: [String: AnyCodable]? //TODO: make params as struct
         let id: Int
         
         init(method: String, params: [String: AnyCodable]?, id: Int) {
@@ -99,6 +103,9 @@ class PrinterClient: WebSocketDelegate, ObservableObject {
             isConnected = true
             canSendRequest = true
             print("websocket is connected: \(headers)")
+            Task {
+                await initializeSubscriptions()
+            }
         case .disconnected(let reason, let code):
             isConnected = false
             canSendRequest = false
@@ -138,13 +145,28 @@ class PrinterClient: WebSocketDelegate, ObservableObject {
             }
         }
     }
+    func initializeSubscriptions() async {
+        do {
+            try await fetchPrinterInfo()
+        } catch {
+            print(error)
+        }
+    }
     
+    func getRequestID() -> Int {
+        let id = Int.random(in: 1...10000)
+        if(expectedResponses.keys.contains(id) || pendingRequests.keys.contains(id)) {
+            return getRequestID()
+        }
+        return id
+    }
     //use only for sending requests where respons is "ok" or is not used
-    func sendRequest(method: String, params: [String: AnyCodable]? = nil, id: Int) async throws {
+    func sendRequest(method: String, params: [String: AnyCodable]? = nil, id: Int = 0) async throws {
         if canSendRequest {
             return try await withCheckedThrowingContinuation { continuation in
-                pendingRequests[id] = continuation
-                let request = JsonRpcRequest(method: method, params: params, id: id)
+                let requestId = id == 0 ? getRequestID() : id
+                pendingRequests[requestId] = continuation
+                let request = JsonRpcRequest(method: method, params: params, id: requestId)
                 do {
                     let requestData = try JSONEncoder().encode(request)
                     socket.write(data: requestData)
@@ -152,7 +174,7 @@ class PrinterClient: WebSocketDelegate, ObservableObject {
                     canSendRequest = false
                 } catch {
                     // If encoding fails, remove the pending request and resume with an error
-                    pendingRequests.removeValue(forKey: id)
+                    pendingRequests.removeValue(forKey: requestId)
                     continuation.resume(throwing: error)
                 }
             }
@@ -162,12 +184,14 @@ class PrinterClient: WebSocketDelegate, ObservableObject {
         }
     }
     
-    func getRequest(method: String, params: [String: AnyCodable]? = nil, id: Int) async throws -> Any {
+    func getRequest(method: String, params: [String: AnyCodable]? = nil) async throws -> AnyCodable {
         return try await withCheckedThrowingContinuation { continuation in
+            let id = getRequestID()
             expectedResponses[id] = continuation
             Task {
                 do {
                     try await sendRequest(method: method, params: params, id: id)
+                    
                 } catch {
                     expectedResponses.removeValue(forKey: id)
                     continuation.resume(throwing: error)
@@ -186,7 +210,8 @@ class PrinterClient: WebSocketDelegate, ObservableObject {
             // Try to decode the response as a JSON-RPC response, if it fails decode as a JSON-RPC error
             if let json = try? JSONDecoder().decode(JsonRpcResponse.self, from: data) {
                 if let continuation = expectedResponses[json.id] {
-                    continuation.resume(returning: json.result.value)
+                    print("received \(json)")
+                    continuation.resume(returning: json.result)
                     if let continuation = pendingRequests[json.id] {
                         pendingRequests.removeValue(forKey: json.id)
                         continuation.resume()
@@ -208,14 +233,24 @@ class PrinterClient: WebSocketDelegate, ObservableObject {
             //notification handling
             else if let json = try? JSONDecoder().decode(JsonRpcNotification.self, from: data) {
                 if let method = json.method as String? {
-                    print("Notification: \(method)")
                     switch method {
                     case "notify_klippy_ready":
                         klippyStatus = .ready
+                        Task {
+                            try await fetchPrinterInfo()
+                        }
                     case "notify_klippy_shutdown":
                         klippyStatus = .shutdown
+                        Task {
+                            try await fetchPrinterInfo()
+                        }
                     case "notify_klippy_disconnected":
                         klippyStatus = .disconnected
+                        Task {
+                            try await fetchPrinterInfo()
+                        }
+                    case "notify_status_update":
+                        print(json)
                     default :
                         break
                     }
