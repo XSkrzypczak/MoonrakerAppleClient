@@ -54,17 +54,35 @@ class Printer: WebSocketDelegate, ObservableObject {
         }
     }
     
+    struct Param {
+        let key: String
+        var value: Any
+        
+        init(key: String, values: Any) {
+            self.key = key
+            self.value = values
+        }
+    }
+    
     struct JsonRpcRequest: Codable {
         private let jsonrpc: String
         let method: String
-        let params: [String: AnyCodable]? //TODO: make params as struct
+        var params: [String: AnyCodable]?
         let id: Int
         
-        init(method: String, params: [String: AnyCodable]?, id: Int) {
+        init(method: String, params: [Param]?, id: Int) {
             self.jsonrpc = "2.0"
             self.method = method
-            self.params = params
             self.id = id
+            
+            if let parameters = params {
+                self.params = [:] 
+                for param in parameters {
+                    self.params?[param.key] = AnyCodable(param.value)
+                }
+            } else {
+                self.params = nil
+            }
         }
     }
     
@@ -161,7 +179,7 @@ class Printer: WebSocketDelegate, ObservableObject {
         return id
     }
     //use only for sending requests where respons is "ok" or is not used
-    func sendRequest(method: String, params: [String: AnyCodable]? = nil, id: Int = 0) async throws {
+    func sendRequest(method: String, params: [Param]? = nil, id: Int = 0) async throws {
         if canSendRequest {
             return try await withCheckedThrowingContinuation { continuation in
                 let requestId = id == 0 ? getRequestID() : id
@@ -184,7 +202,7 @@ class Printer: WebSocketDelegate, ObservableObject {
         }
     }
     
-    func getRequest(method: String, params: [String: AnyCodable]? = nil) async throws -> AnyCodable {
+    func getRequest(method: String, params: [Param]? = nil) async throws -> AnyCodable {
         return try await withCheckedThrowingContinuation { continuation in
             let id = getRequestID()
             expectedResponses[id] = continuation
