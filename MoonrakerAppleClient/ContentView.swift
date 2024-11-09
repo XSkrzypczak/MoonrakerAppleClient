@@ -15,10 +15,12 @@ struct ContentView: View {
     @State var params = Printer.Param(
         key: "objects",
         values: [
-            "toolhead": ["position", "temperature"]
+            "extruder": nil,
+            "fan": nil,
+            "print_stats": nil
         ]
     )
-    @State var method: String = "printer.objects.query"
+    @State var method: String = "printer.objects.subscribe"
     
     var body: some View {
         VStack {

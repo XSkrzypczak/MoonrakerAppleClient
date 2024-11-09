@@ -36,4 +36,26 @@ extension Printer {
             throw error
         }
     }
+    
+    func handleStatusUpdate(_ notification: Any?) {
+        //get array of objects from status update
+        guard let response = notification as? [Any],
+              let objects = response.first as? [String: Any] else {
+            return
+        }
+        for object in objects {
+            if object.key == "extruder" {
+                guard let extruderData = object.value as? [String: Any] else {
+                    return
+                }
+                
+                //extruder notification contains only one value
+                if let extruderTemperature = extruderData["temperature"] {
+                    print("temp: \(extruderTemperature)")
+                } else if let extruderTarget = extruderData["target"] {
+                    print("target: \(extruderTarget)")
+                }
+            }
+        }
+    }
 }

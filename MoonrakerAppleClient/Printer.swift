@@ -268,7 +268,7 @@ class Printer: WebSocketDelegate, ObservableObject {
                             try await fetchPrinterInfo()
                         }
                     case "notify_status_update":
-                        print(json)
+                        handleStatusUpdate(json.params?.value ?? nil)
                     default :
                         break
                     }
