@@ -22,7 +22,13 @@ class Printer: WebSocketDelegate, ObservableObject {
     
     //store printer info
     @Published var klippyStatus: KlippyStatus = .null
+    @Published var printerStatus: PrinterStatus = .null
     @Published var stateMessage: String = "null"
+    
+    @Published var extruder: Extruder = Extruder()
+    @Published var heaterBed: HeaterBed = HeaterBed()
+    @Published var toolhead: Toolhead = Toolhead()
+    @Published var printStats: PrintStats = PrintStats()
     
     
     init(url: URL) {
@@ -32,26 +38,6 @@ class Printer: WebSocketDelegate, ObservableObject {
         socket = WebSocket(request: request)
         socket.delegate = self
         socket.connect()
-    }
-    
-    enum KlippyStatus {
-        case ready
-        case shutdown
-        case disconnected
-        case null
-        
-        var description: String {
-            switch self {
-            case .ready:
-                return "Ready"
-            case .shutdown:
-                return "Shutdown"
-            case .disconnected:
-                return "Disconnected"
-            case .null:
-                return "null"
-            }
-        }
     }
     
     struct Param {
@@ -76,7 +62,7 @@ class Printer: WebSocketDelegate, ObservableObject {
             self.id = id
             
             if let parameters = params {
-                self.params = [:] 
+                self.params = [:]
                 for param in parameters {
                     self.params?[param.key] = AnyCodable(param.value)
                 }
@@ -166,6 +152,7 @@ class Printer: WebSocketDelegate, ObservableObject {
     func initializeSubscriptions() async {
         do {
             try await fetchPrinterInfo()
+            await statusUpdateSubscribe()
         } catch {
             print(error)
         }

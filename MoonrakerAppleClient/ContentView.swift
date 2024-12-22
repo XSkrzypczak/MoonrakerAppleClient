@@ -41,6 +41,14 @@ struct ContentView: View {
             }
             Text(printer.stateMessage)
             Text(printer.klippyStatus.description)
+            
+            Text(printer.printerStatus.description)
+            
+            Text("Extruder temperature: \(String(format: "%.1f", printer.extruder.temperature))")
+            Text("Extruder target: \(String(format: "%.1f", printer.extruder.target))")
+            Text("Heatbed temperature: \(String(format: "%.1f", printer.heaterBed.temperature))")
+            Text("Heatbed target: \(String(format: "%.1f", printer.heaterBed.target))")
+            Text("Filename: \(printer.printStats.filename)")
         }
         .padding()
     }
