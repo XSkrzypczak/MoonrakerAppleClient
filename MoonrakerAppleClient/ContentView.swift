@@ -11,29 +11,9 @@ import AnyCodable
 struct ContentView: View {
     @StateObject var printer = Printer(url: URL(string:"ws://192.168.88.39:7125/websocket")!) //change url to your printer websocket
     
-    //objcets query request for testing
-    @State var params = Printer.Param(
-        key: "objects",
-        values: [
-            "extruder": nil,
-            "fan": nil,
-            "print_stats": nil
-        ]
-    )
-    @State var method: String = "printer.objects.subscribe"
     
     var body: some View {
         VStack {
-            Button("Send request") {
-                
-                Task {
-                    do {
-                        print(try await printer.getRequest(method: method, params: [params]))
-                    } catch {
-                        print("error: \(error)")
-                    }
-                }
-            }
             Button("refresh") {
                 Task {
                     try await printer.fetchPrinterInfo()
@@ -49,7 +29,17 @@ struct ContentView: View {
             Text("Heatbed temperature: \(String(format: "%.1f", printer.heaterBed.temperature))")
             Text("Heatbed target: \(String(format: "%.1f", printer.heaterBed.target))")
             Text("Filename: \(printer.printStats.filename)")
-            Text("Postion: \(printer.gcodeMove.position)")
+            Text("Postion: \(printer.toolhead.position)")
+            
+            List {
+                ForEach(printer.gcodes) { gcode in
+                    VStack(alignment: .leading) {
+                        Text(gcode.message)
+                        Text(String(DateFormatter.localizedString(from: Date(timeIntervalSince1970: gcode.time), dateStyle: .medium, timeStyle: .short)))
+                        Text(gcode.type.rawValue)
+                    }
+                }
+            }
         }
         .padding()
     }

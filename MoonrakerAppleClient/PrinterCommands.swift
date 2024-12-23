@@ -13,12 +13,12 @@ extension Printer {
     func fetchPrinterInfo() async throws {
         do {
             //get response as dictionary
-            guard let response = try await getRequest(method: "printer.info").value as? [String: Any] else {
+            guard let printerInfo = try await getRequest(method: "printer.info").value as? [String: Any] else {
                 throw NSError(domain: "PrinterClient", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot get printer info"])
             }
             //decode response to PrinterInfo
             let state: KlippyStatus = {
-                switch response["state"] as? String {
+                switch printerInfo["state"] as? String {
                 case "ready":
                     return .ready
                 case "shutdown":
@@ -31,7 +31,24 @@ extension Printer {
             }()
             
             self.klippyStatus = state
-            self.stateMessage = response["state_message"] as? String ?? ""
+            self.stateMessage = printerInfo["state_message"] as? String ?? ""
+            
+            //
+            guard let storedGcodesResponse = try await getRequest(method: "server.gcode_store", params: [Param(key: "count", values: 100)]).value as? [String: Any] else {
+                throw NSError(domain: "PrinterClient", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot get stored gcodes"])
+            }
+            if let storedGcodes = storedGcodesResponse["gcode_store"] as? [[String: Any]] {
+                
+                for gcode in storedGcodes {
+                    guard let message = gcode["message"] as? String,
+                          let time = gcode["time"] as? Double,
+                          let type = gcode["type"] as? String else { return }
+                    
+                    let gcode = GCode(message: message, time: time, type: type == "command" ? .command : .response)
+                    self.gcodes.append(gcode)
+                }
+            }
+            
         } catch {
             throw error
         }
@@ -250,7 +267,7 @@ extension Printer {
                     return nil
                 }
             }
-
         }
     }
+    
 }

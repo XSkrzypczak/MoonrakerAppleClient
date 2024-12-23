@@ -109,4 +109,25 @@ extension Printer {
         var speed: Double = 0.0
         var rpm: Double?
     }
+    
+    struct GCode: Identifiable {
+        var id = UUID()
+        let message: String
+        let time: Double
+        let type: GCodeType
+        
+        enum GCodeType {
+            case command
+            case response
+            
+            var rawValue: String {
+                switch self {
+                case .command:
+                    return "Command"
+                case .response:
+                    return "Response"
+                }
+            }
+        }
+    }
 }
