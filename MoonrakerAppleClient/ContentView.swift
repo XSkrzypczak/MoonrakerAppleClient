@@ -49,6 +49,7 @@ struct ContentView: View {
             Text("Heatbed temperature: \(String(format: "%.1f", printer.heaterBed.temperature))")
             Text("Heatbed target: \(String(format: "%.1f", printer.heaterBed.target))")
             Text("Filename: \(printer.printStats.filename)")
+            Text("Postion: \(printer.gcodeMove.position)")
         }
         .padding()
     }

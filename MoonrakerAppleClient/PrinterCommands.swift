@@ -41,9 +41,11 @@ extension Printer {
             key: "objects",
             values: [
                 "extruder": nil,
+                "toolhead": nil,
                 "heater_bed": nil,
                 "fan": nil,
-                "print_stats": nil
+                "print_stats": nil,
+                "gcode_move": nil
             ]
         )])
             .value as? [String: Any]
@@ -72,123 +74,164 @@ extension Printer {
                 guard let extruderData = object.value as? [String: Any] else {
                     return
                 }
-                DispatchQueue.main.async { [weak self] in
+                DispatchQueue.main.async {
                     if let extruderTemperature = extruderData["temperature"] {
-                        self?.extruder.temperature = getDoubleValue(extruderTemperature)
+                        self.extruder.temperature = getDoubleValue(extruderTemperature)
                     }
                     if let extruderTarget = extruderData["target"] {
-                        self?.extruder.target = getDoubleValue(extruderTarget)
+                        self.extruder.target = getDoubleValue(extruderTarget)
                     }
                     if let extruderPower = extruderData["power"] {
-                        self?.extruder.power = getDoubleValue(extruderPower)
+                        self.extruder.power = getDoubleValue(extruderPower)
                     }
                 }
             } else if object.key == "heater_bed" {
                 guard let heaterBedData = object.value as? [String: Any] else {
                     return
                 }
-                DispatchQueue.main.async { [weak self] in
-                    if let heaterBedTemperature = heaterBedData["temperature"]{
-                        self?.heaterBed.temperature = getDoubleValue(heaterBedTemperature)
+                DispatchQueue.main.async {
+                    if let heaterBedTemperature = heaterBedData["temperature"] {
+                        self.heaterBed.temperature = getDoubleValue(heaterBedTemperature)
                     }
                     if let heaterBedTarget = heaterBedData["target"] {
-                        self?.heaterBed.target = getDoubleValue(heaterBedTarget)
+                        self.heaterBed.target = getDoubleValue(heaterBedTarget)
                     }
 
                     if let heaterBedPower = heaterBedData["power"] {
-                        self?.heaterBed.power = getDoubleValue(heaterBedPower)
+                        self.heaterBed.power = getDoubleValue(heaterBedPower)
                     }
                 }
             } else if object.key == "print_stats" {
                 guard let printStats = object.value as? [String: Any] else {
                     return
                 }
-                DispatchQueue.main.async { [weak self] in
-                    //check if file is loaded
+                DispatchQueue.main.async {
                     if let printFilename = printStats["filename"] as? String {
-                        self?.printStats.filename = printFilename
-                        if let printDuration = printStats["print_duration"] as? Double {
-                            self?.printStats.printDuration = getDoubleValue(printDuration)
+                        self.printStats.filename = printFilename
+                    }
+                    if let printDuration = printStats["print_duration"] as? Double {
+                        self.printStats.printDuration = getDoubleValue(printDuration)
+                    }
+                    if let printState = printStats["state"] as? String {
+                        switch printState {
+                        case "standby":
+                            self.printerStatus = .standby
+                        case "printing":
+                            self.printerStatus = .printing
+                        case "paused":
+                            self.printerStatus = .paused
+                        case "complete":
+                            self.printerStatus = .complete
+                        case "cancelled":
+                            self.printerStatus = .cancelled
+                        case "error":
+                            self.printerStatus = .error
+                        default:
+                            self.printerStatus = .null
                         }
-                        if let printState = printStats["state"] as? String {
-                            switch printState {
-                            case "standby":
-                                self?.printerStatus = .standby
-                            case "printing":
-                                self?.printerStatus = .printing
-                            case "paused":
-                                self?.printerStatus = .paused
-                            case "complete":
-                                self?.printerStatus = .complete
-                            case "cancelled":
-                                self?.printerStatus = .cancelled
-                            case "error":
-                                self?.printerStatus = .error
-                            default:
-                                self?.printerStatus = .null
-                            }
-                        }
-                        if let totalDuration = printStats["total_duration"] as? Double {
-                            self?.printStats.printDuration = getDoubleValue(totalDuration)
-                        }
-                        if let filamentUsed = printStats["filament_used"] as? Double {
-                            self?.printStats.filamentUsed = getDoubleValue(filamentUsed)
-                        }
-                        if let state = printStats["state"] as? String {
-                            self?.printStats.state = state
-                        }
-                        if let message = printStats["message"] as? String {
-                            self?.printStats.message = message
-                        }
-                        if let info = printStats["info"] as? [String: Any?] {
-                            self?.printStats.info = info
-                        }
+                    }
+                    if let totalDuration = printStats["total_duration"] {
+                        self.printStats.printDuration = getDoubleValue(totalDuration)
+                    }
+                    if let filamentUsed = printStats["filament_used"] {
+                        self.printStats.filamentUsed = getDoubleValue(filamentUsed)
+                    }
+                    if let state = printStats["state"] as? String {
+                        self.printStats.state = state
+                    }
+                    if let message = printStats["message"] as? String {
+                        self.printStats.message = message
+                    }
+                    if let info = printStats["info"] as? [String: Any?] {
+                        self.printStats.info = info
                     }
                 }
             } else if object.key == "toolhead" {
                 guard let toolheadData = object.value as? [String: Any] else {
                     return
                 }
-                DispatchQueue.main.async { [weak self] in
+                DispatchQueue.main.async {
                     if let homedAxesString = toolheadData["homed_axes"] as? String {
                         let homedAxes = homedAxesString.map { String($0.lowercased()) }
-                        self?.toolhead.homedAxes.x = false
-                        self?.toolhead.homedAxes.y = false
-                        self?.toolhead.homedAxes.z = false
+                        self.toolhead.homedAxes.x = false
+                        self.toolhead.homedAxes.y = false
+                        self.toolhead.homedAxes.z = false
                         for axis in homedAxes {
                             switch axis {
                             case "x":
-                                self?.toolhead.homedAxes.x = true
+                                self.toolhead.homedAxes.x = true
                             case "y":
-                                self?.toolhead.homedAxes.y = true
+                                self.toolhead.homedAxes.y = true
                             case "z":
-                                self?.toolhead.homedAxes.z = true
+                                self.toolhead.homedAxes.z = true
                             default:
                                 break
                             }
                         }
                     }
                     if let extruder = toolheadData["extruder"] as? String {
-                        self?.toolhead.extruder = extruder
+                        self.toolhead.extruder = extruder
                     }
-                    if let position = toolheadData["position"] as? [Double] {
-                        self?.toolhead.position = position
+                    if let position = toolheadData["position"] as? [Any] {
+                        self.toolhead.position = convertToDoubleArray(position)
                     }
-                    if let maxVelocity = toolheadData["max_velocity"] as? Double {
-                        self?.toolhead.maxVelocity = maxVelocity
+                    if let maxVelocity = toolheadData["max_velocity"] {
+                        self.toolhead.maxVelocity = getDoubleValue(maxVelocity)
                     }
-                    if let maxAccel = toolheadData["max_accel"] as? Double {
-                        self?.toolhead.maxAccel = maxAccel
+                    if let maxAccel = toolheadData["max_accel"] {
+                        self.toolhead.maxAccel = getDoubleValue(maxAccel)
                     }
-                    if let maxAccelToDecel = toolheadData["max_accel_to_decel"] as? Double {
-                        self?.toolhead.maxAccelToDecel = maxAccelToDecel
+                    if let maxAccelToDecel = toolheadData["max_accel_to_decel"] {
+                        self.toolhead.maxAccelToDecel = getDoubleValue(maxAccelToDecel)
                     }
-                    if let squareCornerVelocity = toolheadData["square_corner_velocity"] as? Double {
-                        self?.toolhead.squareCornerVelocity = squareCornerVelocity
+                    if let squareCornerVelocity = toolheadData["square_corner_velocity"] {
+                        self.toolhead.squareCornerVelocity = getDoubleValue(squareCornerVelocity)
+                    }
+                }
+            } else if object.key == "gcode_move" {
+                guard let gcodeMoveData = object.value as? [String: Any] else {
+                    return
+                }
+                DispatchQueue.main.async {
+                    if let speedFactor = gcodeMoveData["speed_factor"] {
+                        self.gcodeMove.speedFactor = getDoubleValue(speedFactor)
+                    }
+                    if let speed = gcodeMoveData["speed"] {
+                        self.gcodeMove.speed = getDoubleValue(speed)
+                    }
+                    if let extrudeFactor = gcodeMoveData["extrude_factor"] {
+                        self.gcodeMove.extruderFactor = getDoubleValue(extrudeFactor)
+                    }
+                    if let absoluteCoordinates = gcodeMoveData["absolute_coordinates"] as? Bool {
+                        self.gcodeMove.absoluteCoordinates = absoluteCoordinates
+                    }
+                    if let absoluteExtrude = gcodeMoveData["absolute_extrude"] as? Bool {
+                        self.gcodeMove.absoluteExtrude = absoluteExtrude
+                    }
+                    if let homingOrigin = gcodeMoveData["homing_origin"] as? [Any] {
+                        self.gcodeMove.homingOrigin = convertToDoubleArray(homingOrigin)
+                    }
+                    if let position = gcodeMoveData["position"] as? [Any] {
+                        self.gcodeMove.position = convertToDoubleArray(position)
+                    }
+                    if let gcodePosition = gcodeMoveData["gcode_position"] as? [Any] {
+                        self.gcodeMove.gcodePosition = convertToDoubleArray(gcodePosition)
+                    }
+                }
+            } else if object.key == "fan" {
+                guard let fanData = object.value as? [String: Any] else {
+                    return
+                }
+                DispatchQueue.main.async {
+                    if let speed = fanData["speed"] {
+                        self.filamentFan.speed = getDoubleValue(speed)
+                    }
+                    if let rpm = fanData["rpm"] {
+                        self.filamentFan.rpm = getDoubleValue(rpm)
                     }
                 }
             }
-            //avoid getting default values from responses in int
+            //avoid getting values from responses in int
             func getDoubleValue(_ value: Any?) -> Double {
                 if let doubleValue = value as? Double {
                     return doubleValue
@@ -197,6 +240,17 @@ extension Printer {
                 }
                 return 0.0
             }
+            func convertToDoubleArray(_ input: [Any]) -> [Double] {
+                return input.compactMap { element in
+                    if let doubleValue = element as? Double {
+                        return doubleValue
+                    } else if let intValue = element as? Int {
+                        return Double(intValue)
+                    }
+                    return nil
+                }
+            }
+
         }
     }
 }

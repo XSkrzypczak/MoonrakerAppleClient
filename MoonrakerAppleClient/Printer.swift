@@ -29,6 +29,8 @@ class Printer: WebSocketDelegate, ObservableObject {
     @Published var heaterBed: HeaterBed = HeaterBed()
     @Published var toolhead: Toolhead = Toolhead()
     @Published var printStats: PrintStats = PrintStats()
+    @Published var gcodeMove: GcodeMove = GcodeMove()
+    @Published var filamentFan: FilamentFan = FilamentFan()
     
     
     init(url: URL) {

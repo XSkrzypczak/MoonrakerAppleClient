@@ -94,4 +94,19 @@ extension Printer {
         var message: String = ""
         var info: [String: Any?] = ["totalLayer": nil, "currentLayer": nil]
     }
+    
+    struct GcodeMove {
+        var speedFactor: Double = 0.0
+        var speed: Double = 0.0
+        var extruderFactor: Double = 0.0
+        var absoluteCoordinates: Bool = true
+        var absoluteExtrude: Bool = false
+        var homingOrigin: [Double] = [0.0, 0.0, 0.0, 0.0]
+        var position: [Double] = [0.0, 0.0, 0.0, 0.0]
+        var gcodePosition: [Double] = [0.0, 0.0, 0.0, 0.0]
+    }
+    struct FilamentFan {
+        var speed: Double = 0.0
+        var rpm: Double?
+    }
 }
