@@ -27,7 +27,7 @@ class Printer: WebSocketDelegate, ObservableObject {
     
     @Published var gcodes : [GCode] = []
     
-    @Published var extruder: Extruder = Extruder()
+    @Published var extruders: [Extruder] = [Extruder()]
     @Published var heaterBed: HeaterBed = HeaterBed()
     @Published var toolhead: Toolhead = Toolhead()
     @Published var printStats: PrintStats = PrintStats()
@@ -169,7 +169,7 @@ class Printer: WebSocketDelegate, ObservableObject {
         }
         return id
     }
-    //use only for sending requests where respons is "ok" or is not used
+    //use only for sending requests where response is "ok" or is not used
     func sendRequest(method: String, params: [Param]? = nil, id: Int = 0) async throws {
         if canSendRequest {
             return try await withCheckedThrowingContinuation { continuation in

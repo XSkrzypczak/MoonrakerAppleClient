@@ -55,15 +55,24 @@ extension Printer {
             }
         }
     }
-    struct Extruder {
+    
+    protocol Heater {
+        var name: String { get set }
+        var temperature: Double { get set }
+        var target: Double { get set }
+        var power: Double { get set }
+    }
+    
+    struct Extruder: Heater {
+        var name: String = "extruder"
         var temperature: Double = 0.0
         var target: Double = 0.0
         var power: Double = 0.0
         var pressureAdvance: Double = 0.0
         var smoothTime: Double = 0.0
     }
-    
-    struct HeaterBed {
+    struct HeaterBed: Heater {
+        var name: String = "heater_bed"
         var temperature: Double = 0.0
         var target: Double = 0.0
         var power: Double = 0.0

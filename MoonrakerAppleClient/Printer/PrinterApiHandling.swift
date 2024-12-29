@@ -1,5 +1,5 @@
 //
-//  PrinterCommands.swift
+//  PrinterApiHandling.swift
 //  MoonrakerAppleClient
 //
 //  Created by Mikolaj Skrzypczak on 26/10/2024.
@@ -53,7 +53,9 @@ extension Printer {
             throw error
         }
     }
+    
     func statusUpdateSubscribe() async {
+        //TODO: Get available objects from api
         let response = try? await getRequest(method: "printer.objects.subscribe", params: [Param(
             key: "objects",
             values: [
@@ -87,19 +89,17 @@ extension Printer {
     
     func setPrinterObjectsValues(_ objects: [String: Any]) {
         for object in objects {
-            if object.key == "extruder" {
-                guard let extruderData = object.value as? [String: Any] else {
-                    return
-                }
+            if let extruderIndex = self.extruders.firstIndex(where: { $0.name == object.key }) {
+                guard let extruderData = object.value as? [String: Any] else { continue }
                 DispatchQueue.main.async {
                     if let extruderTemperature = extruderData["temperature"] {
-                        self.extruder.temperature = getDoubleValue(extruderTemperature)
+                        self.extruders[extruderIndex].temperature = getDoubleValue(extruderTemperature)
                     }
                     if let extruderTarget = extruderData["target"] {
-                        self.extruder.target = getDoubleValue(extruderTarget)
+                        self.extruders[extruderIndex].target = getDoubleValue(extruderTarget)
                     }
                     if let extruderPower = extruderData["power"] {
-                        self.extruder.power = getDoubleValue(extruderPower)
+                        self.extruders[extruderIndex].power = getDoubleValue(extruderPower)
                     }
                 }
             } else if object.key == "heater_bed" {
@@ -113,7 +113,7 @@ extension Printer {
                     if let heaterBedTarget = heaterBedData["target"] {
                         self.heaterBed.target = getDoubleValue(heaterBedTarget)
                     }
-
+                    
                     if let heaterBedPower = heaterBedData["power"] {
                         self.heaterBed.power = getDoubleValue(heaterBedPower)
                     }
@@ -269,5 +269,4 @@ extension Printer {
             }
         }
     }
-    
 }
