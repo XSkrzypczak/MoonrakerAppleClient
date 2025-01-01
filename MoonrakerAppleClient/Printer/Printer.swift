@@ -25,15 +25,19 @@ class Printer: WebSocketDelegate, ObservableObject {
     @Published var printerStatus: PrinterStatus = .null
     @Published var stateMessage: String = "null"
     
-    @Published var gcodes : [GCode] = []
+    @Published var printerObjects: [String] = []
     
-    @Published var extruders: [Extruder] = [Extruder()]
+    @Published var gcodes : [GCode] = []
+    @Published var extruders: [Extruder] = []
     @Published var heaterBed: HeaterBed = HeaterBed()
     @Published var toolhead: Toolhead = Toolhead()
     @Published var printStats: PrintStats = PrintStats()
     @Published var gcodeMove: GcodeMove = GcodeMove()
     @Published var filamentFan: FilamentFan = FilamentFan()
-    
+    @Published var temperatureSensors: [TemperatureSensor] = []
+    @Published var temperatureFans: [TemperatureFan] = []
+    @Published var heaterFans: [HeaterFan] = []
+    @Published var gcodeMacros: [String] = []
     
     init(url: URL) {
         self.url = url

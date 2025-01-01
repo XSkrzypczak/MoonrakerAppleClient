@@ -71,11 +71,32 @@ extension Printer {
         var pressureAdvance: Double = 0.0
         var smoothTime: Double = 0.0
     }
+    
     struct HeaterBed: Heater {
         var name: String = "heater_bed"
         var temperature: Double = 0.0
         var target: Double = 0.0
         var power: Double = 0.0
+    }
+    
+    struct TemperatureSensor {
+        var name: String = ""
+        var temperature: Double = 0.0
+        var measuredMinTemp: Double = 0.0
+        var measuredMaxTemp: Double = 0.0
+    }
+    
+    struct TemperatureFan {
+        var name: String = ""
+        var speed: Double = 0.0
+        var temperature: Double = 0.0
+        var target: Double = 0.0
+    }
+    
+    struct HeaterFan {
+        var name: String = ""
+        var speed: Double = 0.0
+        var rpm: Int? = nil
     }
     
     struct Toolhead {
@@ -116,7 +137,7 @@ extension Printer {
     }
     struct FilamentFan {
         var speed: Double = 0.0
-        var rpm: Double?
+        var rpm: Int?
     }
     
     struct GCode: Identifiable {

@@ -12,6 +12,38 @@ extension Printer {
     @MainActor
     func fetchPrinterInfo() async throws {
         do {
+            guard let printerObjects = try await getRequest(method: "printer.objects.list").value as? [String: Any] else {
+                throw NSError(domain: "PrinterClient", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot get printer objects"])
+            }
+            self.printerObjects = printerObjects["objects"] as! [String]
+            for object in self.printerObjects {
+                if object.hasPrefix("extruder") {
+                    if !self.extruders.contains(where: { $0.name == object }) {
+                        self.extruders.append(Extruder(name: object))
+                    }
+                } else if object.hasPrefix("temperature_sensor") {
+                    let name = String(object.split(separator: " ")[1])
+                    if !self.temperatureSensors.contains(where: { $0.name == name }) {
+                        self.temperatureSensors.append(TemperatureSensor(name: name))
+                    }
+                } else if object.hasPrefix("temperature_fan") {
+                    let name = String(object.split(separator: " ")[1])
+                    if !self.temperatureFans.contains(where: { $0.name == name }) {
+                        self.temperatureFans.append(TemperatureFan(name: name))
+                    }
+                } else if object.hasPrefix("heater_fan") {
+                    let name = String(object.split(separator: " ")[1])
+                    if !self.heaterFans.contains(where: { $0.name == name }) {
+                        self.heaterFans.append(HeaterFan(name: name))
+                    }
+                } else if object.hasPrefix("gcode_macro") {
+                    let name = String(object.split(separator: " ")[1])
+                    if !self.gcodeMacros.contains(where: { $0 == name }) {
+                        self.gcodeMacros.append(name)
+                    }
+                }
+            }
+            
             //get response as dictionary
             guard let printerInfo = try await getRequest(method: "printer.info").value as? [String: Any] else {
                 throw NSError(domain: "PrinterClient", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot get printer info"])
@@ -33,7 +65,6 @@ extension Printer {
             self.klippyStatus = state
             self.stateMessage = printerInfo["state_message"] as? String ?? ""
             
-            //
             guard let storedGcodesResponse = try await getRequest(method: "server.gcode_store", params: [Param(key: "count", values: 100)]).value as? [String: Any] else {
                 throw NSError(domain: "PrinterClient", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot get stored gcodes"])
             }
@@ -244,7 +275,7 @@ extension Printer {
                         self.filamentFan.speed = getDoubleValue(speed)
                     }
                     if let rpm = fanData["rpm"] {
-                        self.filamentFan.rpm = getDoubleValue(rpm)
+                        self.filamentFan.rpm = rpm as? Int
                     }
                 }
             }
