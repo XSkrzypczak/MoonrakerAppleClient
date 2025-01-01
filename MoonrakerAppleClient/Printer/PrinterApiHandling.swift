@@ -86,25 +86,55 @@ extension Printer {
     }
     
     func statusUpdateSubscribe() async {
-        //TODO: Get available objects from api
-        let response = try? await getRequest(method: "printer.objects.subscribe", params: [Param(
-            key: "objects",
-            values: [
-                "extruder": nil,
-                "toolhead": nil,
-                "heater_bed": nil,
-                "fan": nil,
-                "print_stats": nil,
-                "gcode_move": nil
-            ]
-        )])
-            .value as? [String: Any]
-        
-        guard let objects = response?["status"] as? [String: Any] else {
-            return
+        do {
+            try await fetchPrinterInfo()
+            
+            var objectsToSubscribe: [String] = []
+
+            // Adding keys
+            objectsToSubscribe.append("toolhead")
+            objectsToSubscribe.append("gcode_move")
+
+            if printerObjects.contains("virtual_sdcard") {
+                objectsToSubscribe.append("print_stats")
+            }
+            if printerObjects.contains("display") || printerObjects.contains("display_status") {
+                objectsToSubscribe.append("display_status")
+            }
+            if printerObjects.contains("heater_bed") {
+                objectsToSubscribe.append("heater_bed")
+            }
+            if printerObjects.contains("fan") {
+                objectsToSubscribe.append("fan")
+            }
+            for object in printerObjects.filter({ $0.hasPrefix("extruder") }) {
+                objectsToSubscribe.append(object)
+            }
+            for object in printerObjects.filter({ $0.hasPrefix("temperature_fan") }) {
+                objectsToSubscribe.append(object)
+            }
+            for object in printerObjects.filter({ $0.hasPrefix("temperature_sensor") }) {
+                objectsToSubscribe.append(object)
+            }
+            for object in printerObjects.filter({ $0.hasPrefix("heater_fan") }) {
+                objectsToSubscribe.append(object)
+            }
+            
+            let response = try? await getRequest(method: "printer.objects.subscribe", params: [Param(
+                key: "objects",
+                //convert to [String: nil]
+                values: Dictionary(uniqueKeysWithValues: objectsToSubscribe.map { ($0, nil as Any?) })
+            )])
+                .value as? [String: Any]
+            
+            guard let objects = response?["status"] as? [String: Any] else {
+                return
+            }
+            
+            setPrinterObjectsValues(objects)
+        } catch {
+            print(error)
         }
-        
-        setPrinterObjectsValues(objects)
     }
     
     func handleStatusUpdate(_ notification: Any?) {

@@ -25,7 +25,7 @@ class Printer: WebSocketDelegate, ObservableObject {
     @Published var printerStatus: PrinterStatus = .null
     @Published var stateMessage: String = "null"
     
-    @Published var printerObjects: [String] = []
+    var printerObjects: [String] = []
     
     @Published var gcodes : [GCode] = []
     @Published var extruders: [Extruder] = []
