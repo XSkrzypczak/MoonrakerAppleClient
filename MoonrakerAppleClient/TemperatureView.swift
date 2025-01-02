@@ -38,6 +38,11 @@ struct TemperatureView: View {
                 }
             }
             HeaterBlock(heater: $printer.heaterBed)
+            ForEach(printer.temperatureSensors, id: \.name) { sensor in
+                if let index = printer.temperatureSensors.firstIndex(where: { $0.name == sensor.name }) {
+                    TempSensorBlock(sensor: $printer.temperatureSensors[index])
+                }
+            }
         }
     }
 }
@@ -65,6 +70,26 @@ struct HeaterBlock<Heater: Printer.Heater>: View {
                         await printer.setHeaterTarget(heater, to: target)
                     }
                 }
+        }
+        .padding()
+    }
+}
+
+struct TempSensorBlock: View {
+    @EnvironmentObject var printer: Printer
+    @Binding var sensor: Printer.TemperatureSensor
+    @State private var target: String = "0"
+    @State private var temperature: Double = 0
+
+    var body: some View {
+        HStack {
+            Text(String(sensor.name))
+                .font(.headline)
+                .frame(width: 100)
+            Text(String(sensor.temperature))
+                .frame(width: 100)
+            Text("-")
+                .frame(width: 100)
         }
         .padding()
     }
