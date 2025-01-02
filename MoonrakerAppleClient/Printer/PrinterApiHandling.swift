@@ -151,7 +151,7 @@ extension Printer {
     func setPrinterObjectsValues(_ objects: [String: Any]) {
         for object in objects {
             if let extruderIndex = self.extruders.firstIndex(where: { $0.name == object.key }) {
-                guard let extruderData = object.value as? [String: Any] else { continue }
+                guard let extruderData = object.value as? [String: Any] else { return }
                 DispatchQueue.main.async {
                     if let extruderTemperature = extruderData["temperature"] {
                         self.extruders[extruderIndex].temperature = getDoubleValue(extruderTemperature)
@@ -163,7 +163,71 @@ extension Printer {
                         self.extruders[extruderIndex].power = getDoubleValue(extruderPower)
                     }
                 }
-            } else if object.key == "heater_bed" {
+            } else if object.key.hasPrefix("heater_fan") {
+                let heaterFanName = String(object.key.split(separator: " ")[1])
+                if heaterFans.contains(where: { $0.name == heaterFanName }) {
+                    guard let heaterFanData = object.value as? [String: Any],
+                          let index = heaterFans.firstIndex(where: {$0.name == heaterFanName}) else { return }
+                    DispatchQueue.main.async {
+                        if let speed = heaterFanData["speed"] {
+                            self.heaterFans[index].speed = getDoubleValue(speed)
+                        }
+                        if let rpm = heaterFanData["rpm"] as? Int {
+                            self.heaterFans[index].rpm = rpm
+                        }
+                    }
+                }
+            } else if object.key.hasPrefix("heater_fan") {
+                let heaterFanName = String(object.key.split(separator: " ")[1])
+                if heaterFans.contains(where: { $0.name == heaterFanName }) {
+                    guard let heaterFanData = object.value as? [String: Any],
+                          let index = heaterFans.firstIndex(where: {$0.name == heaterFanName}) else { return }
+                    DispatchQueue.main.async {
+                        if let speed = heaterFanData["speed"] {
+                            self.heaterFans[index].speed = getDoubleValue(speed)
+                        }
+                        if let rpm = heaterFanData["rpm"] as? Int {
+                            self.heaterFans[index].rpm = rpm
+                        }
+                    }
+                }
+            } else if object.key.hasPrefix("temperature_fan") {
+                let temperatureFanName = String(object.key.split(separator: " ")[1])
+                if temperatureFans.contains(where: { $0.name == temperatureFanName }) {
+                    guard let temperatureFanData = object.value as? [String: Any],
+                          let index = temperatureFans.firstIndex(where: {$0.name == temperatureFanName}) else { return }
+                    DispatchQueue.main.async {
+                        if let speed = temperatureFanData["speed"] {
+                            self.temperatureFans[index].speed = getDoubleValue(speed)
+                        }
+                        if let target = temperatureFanData["target"] {
+                            self.temperatureFans[index].target = getDoubleValue(target)
+                        }
+                        if let temperature = temperatureFanData["temperature"] {
+                            self.temperatureFans[index].temperature = getDoubleValue(temperature)
+                        }
+                    }
+                }
+            } else if object.key.hasPrefix("temperature_sensor") {
+                let temperatureSensorName = String(object.key.split(separator: " ")[1])
+                if temperatureSensors.contains(where: { $0.name == temperatureSensorName }) {
+                    guard let temperatureSensorData = object.value as? [String: Any],
+                          let index = temperatureSensors.firstIndex(where: {$0.name == temperatureSensorName}) else { return }
+                    DispatchQueue.main.async {
+                        if let temperature = temperatureSensorData["temperature"] {
+                            self.temperatureSensors[index].temperature = getDoubleValue(temperature)
+                        }
+                        if let measuredMin = temperatureSensorData["measured_min_temp"] {
+                            self.temperatureSensors[index].measuredMinTemp = getDoubleValue(measuredMin)
+                        }
+                        if let measuredMax = temperatureSensorData["measured_max_temp"] {
+                            self.temperatureSensors[index].measuredMaxTemp = getDoubleValue(measuredMax)
+                        }
+                    }
+                }
+            }
+            
+            else if object.key == "heater_bed" {
                 guard let heaterBedData = object.value as? [String: Any] else {
                     return
                 }
