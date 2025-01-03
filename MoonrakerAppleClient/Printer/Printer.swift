@@ -10,6 +10,7 @@ import Starscream
 //TODO: fork AnyCodable and add privacy manifest
 import AnyCodable
 
+//TODO: Add thrown error handling
 class Printer: WebSocketDelegate, ObservableObject {
     private let socket: WebSocket
     private let url: URL
@@ -264,6 +265,9 @@ class Printer: WebSocketDelegate, ObservableObject {
                         }
                     case "notify_status_update":
                         handleStatusUpdate(json.params?.value ?? nil)
+                    case "notify_gcode_response":
+                        //TODO: Add handling of all types of responses
+                        print("Got gcode response: \((json.params?.value as! [String])[0])")
                     default :
                         break
                     }
