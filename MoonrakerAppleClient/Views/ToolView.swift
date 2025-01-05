@@ -8,11 +8,15 @@
 import SwiftUI
 
 struct ToolView: View {
+    @EnvironmentObject var printer: Printer
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        VStack {
+            
+        }
     }
 }
 
 #Preview {
     ToolView()
+        .environmentObject(Printer(url: URL(string:"ws://192.168.88.39:7125")!))
 }
