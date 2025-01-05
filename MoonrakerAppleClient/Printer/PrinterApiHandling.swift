@@ -162,6 +162,9 @@ extension Printer {
                     if let extruderPower = extruderData["power"] {
                         self.extruders[extruderIndex].power = getDoubleValue(extruderPower)
                     }
+                    if let extruderCanExtrude = extruderData["can_extrude"] as? Bool {
+                        self.extruders[extruderIndex].canExtrude = extruderCanExtrude
+                    }
                 }
             } else if object.key.hasPrefix("heater_fan") {
                 let heaterFanName = String(object.key.split(separator: " ")[1])

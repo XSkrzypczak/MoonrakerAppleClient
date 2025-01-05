@@ -65,6 +65,7 @@ extension Printer {
     
     struct Extruder: Heater {
         var name: String = "extruder"
+        var canExtrude: Bool = false
         var temperature: Double = 0.0
         var target: Double = 0.0
         var power: Double = 0.0
