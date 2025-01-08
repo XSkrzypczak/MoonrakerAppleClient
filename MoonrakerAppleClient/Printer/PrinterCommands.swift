@@ -7,10 +7,11 @@
 
 import Foundation
 
+@MainActor
 extension Printer {
     func runGCode(_ gcode: String) async {
         do {
-            try await sendRequest(method: "printer.gcode.script", params: [Param(key: "script", values: gcode)])
+            let response = try await getRequest(method: "printer.gcode.script", params: [Param(key: "script", values: gcode)])
             gcodes.append(GCode(message: gcode, time: Double(Date().timeIntervalSince1970), type: .command))
         } catch {
             print("Error sending GCode: \(error)")
@@ -40,45 +41,45 @@ extension Printer {
         await runGCode("G28")
     }
     
-    func moveAxisToPosition(axis: String, position: Double, speed: Int) async throws {
+    func moveAxisToPosition(axis: String, position: Double, speed: Int) async {
         // Check if the axis is homed
         switch axis.lowercased() {
         case "x":
             if !toolhead.homedAxes.x {
-                throw NSError(domain: "Printer", code: 99, userInfo: [NSLocalizedDescriptionKey: "Axis X is not homed"])
+                return
             }
         case "y":
             if !toolhead.homedAxes.y {
-                throw NSError(domain: "Printer", code: 99, userInfo: [NSLocalizedDescriptionKey: "Axis Y is not homed"])
+                return
             }
         case "z":
             if !toolhead.homedAxes.z {
-                throw NSError(domain: "Printer", code: 99, userInfo: [NSLocalizedDescriptionKey: "Axis Z is not homed"])
+                return
             }
         default:
-            throw NSError(domain: "Printer", code: 98, userInfo: [NSLocalizedDescriptionKey: "Unknown axis \(axis)"])
+            return
         }
         
         await runGCode("G1 \(axis)\(position) F\(getFParameter(speed))")
     }
 
     
-    func moveAxisRelative(axis: String, distance: Double, speed: Int) async throws {
+    func moveAxisRelative(axis: String, distance: Double, speed: Int) async {
         switch axis.lowercased() {
         case "x":
             if !toolhead.homedAxes.x {
-                throw NSError(domain: "Printer", code: 99, userInfo: [NSLocalizedDescriptionKey: "Axis X is not homed"])
+                return
             }
         case "y":
             if !toolhead.homedAxes.y {
-                throw NSError(domain: "Printer", code: 99, userInfo: [NSLocalizedDescriptionKey: "Axis Y is not homed"])
+                return
             }
         case "z":
             if !toolhead.homedAxes.z {
-                throw NSError(domain: "Printer", code: 99, userInfo: [NSLocalizedDescriptionKey: "Axis Z is not homed"])
+                return
             }
         default:
-            throw NSError(domain: "Printer", code: 98, userInfo: [NSLocalizedDescriptionKey: "Unknown axis \(axis)"])
+            return
         }
         //relative positioning
         await runGCode("G91")

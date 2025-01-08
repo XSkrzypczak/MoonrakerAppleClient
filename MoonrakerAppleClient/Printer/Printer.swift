@@ -174,7 +174,6 @@ class Printer: WebSocketDelegate, ObservableObject {
         }
         return id
     }
-    //use only for sending requests where response is "ok" or is not used
     func sendRequest(method: String, params: [Param]? = nil, id: Int = 0) async throws {
         if canSendRequest {
             return try await withCheckedThrowingContinuation { continuation in
@@ -274,5 +273,9 @@ class Printer: WebSocketDelegate, ObservableObject {
                 }
             }
         }
+    }
+    
+    func addGCode(_ gcode: GCode) {
+        gcodes.append(gcode)
     }
 }
