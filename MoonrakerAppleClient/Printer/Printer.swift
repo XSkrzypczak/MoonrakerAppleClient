@@ -274,8 +274,4 @@ class Printer: WebSocketDelegate, ObservableObject {
             }
         }
     }
-    
-    func addGCode(_ gcode: GCode) {
-        gcodes.append(gcode)
-    }
 }
