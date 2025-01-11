@@ -56,6 +56,29 @@ extension Printer {
         }
     }
     
+    enum Axis {
+        case x
+        case y
+        case z
+        case e
+        case xyz
+        
+        var description: String {
+            switch self {
+            case .x:
+                return "X"
+            case .y:
+                return "Y"
+            case .z:
+                return "Z"
+            case .e:
+                return "E"
+            case .xyz:
+                return "XYZ"
+            }
+        }
+    }
+    
     protocol Heater {
         var name: String { get set }
         var temperature: Double { get set }
