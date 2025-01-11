@@ -297,21 +297,20 @@ extension Printer {
                 }
                 DispatchQueue.main.async {
                     if let homedAxesString = toolheadData["homed_axes"] as? String {
-                        let homedAxes = homedAxesString.map { String($0.lowercased()) }
-                        self.toolhead.homedAxes.x = false
-                        self.toolhead.homedAxes.y = false
-                        self.toolhead.homedAxes.z = false
-                        for axis in homedAxes {
-                            switch axis {
-                            case "x":
-                                self.toolhead.homedAxes.x = true
-                            case "y":
-                                self.toolhead.homedAxes.y = true
-                            case "z":
-                                self.toolhead.homedAxes.z = true
-                            default:
-                                break
+                        let homedAxes: [Axis] = homedAxesString.compactMap { character in
+                            switch character.lowercased() {
+                            case "x": return .x
+                            case "y": return .y
+                            case "z": return .z
+                            case "e": return .e
+                            default: return nil // Ignore invalid characters
                             }
+                        }
+                        self.toolhead.homedAxes[.x] = false
+                        self.toolhead.homedAxes[.y] = false
+                        self.toolhead.homedAxes[.z] = false
+                        for axis in homedAxes {
+                            self.toolhead.homedAxes[axis] = true
                         }
                     }
                     if let extruder = toolheadData["extruder"] as? String {

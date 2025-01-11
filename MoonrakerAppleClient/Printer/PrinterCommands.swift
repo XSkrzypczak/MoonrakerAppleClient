@@ -34,57 +34,27 @@ extension Printer {
     
     //MARK: Tool commands
     
-    func homeAxis(_ axis: String) async {
-        await runGCode("G28 \(axis)")
-    }
-    
-    func homeAllAxes() async {
-        await runGCode("G28")
-    }
-    
-    func moveAxisToPosition(axis: String, position: Double, speed: Int) async {
-        // Check if the axis is homed
-        switch axis.lowercased() {
-        case "x":
-            if !toolhead.homedAxes.x {
-                return
-            }
-        case "y":
-            if !toolhead.homedAxes.y {
-                return
-            }
-        case "z":
-            if !toolhead.homedAxes.z {
-                return
-            }
-        default:
-            return
+    func homeAxis(_ axis: Axis) async {
+        if axis == .x || axis == .y || axis == .z {
+            await runGCode("G28 \(axis.description)")
+        } else if axis == .xyz {
+            await runGCode("G28")
         }
+    }
+    
+    func moveAxisToPosition(axis: Axis, position: Double, speed: Int) async {
+        // Check if the axis is homed
+        if toolhead.homedAxes[axis] == false { return }
         
-        await runGCode("G1 \(axis)\(position) F\(getFParameter(speed))")
+        await runGCode("G1 \(axis.description)\(position) F\(getFParameter(speed))")
     }
 
     
-    func moveAxisRelative(axis: String, distance: Double, speed: Int) async {
-        switch axis.lowercased() {
-        case "x":
-            if !toolhead.homedAxes.x {
-                return
-            }
-        case "y":
-            if !toolhead.homedAxes.y {
-                return
-            }
-        case "z":
-            if !toolhead.homedAxes.z {
-                return
-            }
-        default:
-            return
-        }
+    func moveAxisRelative(axis: Axis, distance: Double, speed: Int) async {
+        if toolhead.homedAxes[axis] == false { return }
         //relative positioning
         await runGCode("G91")
-        await runGCode("G1 \(axis)\(distance) F\(getFParameter(speed))")
+        await runGCode("G1 \(axis.description)\(distance) F\(getFParameter(speed))")
         //reset to absolute positioning
         await runGCode("G90")
     }

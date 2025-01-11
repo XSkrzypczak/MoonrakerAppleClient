@@ -124,19 +124,13 @@ extension Printer {
     }
     
     struct Toolhead {
-        var homedAxes: homedAxes = homedAxes()
         var extruder: String = ""
         var position: [Double] = []
         var maxVelocity: Double = 0.0
         var maxAccel: Double = 0.0
         var maxAccelToDecel: Double = 0.0
         var squareCornerVelocity: Double = 0.0
-        
-        struct homedAxes {
-            var x: Bool = false
-            var y: Bool = false
-            var z: Bool = false
-        }
+        var homedAxes: [Axis: Bool] = [.x: false, .y: false, .z: false]
     }
     
     struct PrintStats {
