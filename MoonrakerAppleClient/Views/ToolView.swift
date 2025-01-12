@@ -80,5 +80,21 @@ struct HomeButton: View {
 
 #Preview("ToolView") {
     ToolView()
-        .environmentObject(Printer(url: URL(string:"ws://192.168.88.39:7125")!))
+        .environmentObject(PreviewEnvironment.printer)
 }
+
+#Preview("AxisPositionField") {
+    AxisPositionField()
+        .environmentObject(PreviewEnvironment.printer)
+}
+
+#Preview("MoveButton") {
+    MoveButton(axis: .x, isPositive: true)
+        .environmentObject(PreviewEnvironment.printer)
+}
+
+#Preview("HomeButton") {
+    HomeButton(axis: .x)
+        .environmentObject(PreviewEnvironment.printer)
+}
+
