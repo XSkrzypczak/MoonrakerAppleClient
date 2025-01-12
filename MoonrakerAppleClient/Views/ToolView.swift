@@ -11,7 +11,17 @@ struct ToolView: View {
     @EnvironmentObject var printer: Printer
     var body: some View {
         VStack {
-            MoveButton(axis: .x, isPositive: true)
+            
+        }
+    }
+}
+
+struct AxisPositionField: View {
+    @EnvironmentObject var printer: Printer
+    
+    var body: some View {
+        VStack {
+            
         }
     }
 }
