@@ -45,7 +45,30 @@ struct MoveButton: View {
     }
 }
 
-#Preview {
+struct HomeButton: View {
+    @EnvironmentObject var printer: Printer
+    
+    let axis: Printer.Axis
+    
+    var body: some View {
+        Button(action: {
+            Task {
+                await printer.homeAxis(axis)
+            }
+        }, label: {
+            HStack {
+                Image(systemName: "house.fill")
+                Text("\(axis.description.uppercased())")
+            }
+            .foregroundStyle(.white)
+            .padding()
+            .background(Color.blue)
+            .clipShape(RoundedRectangle(cornerSize: CGSize(width: 10, height: 10)))
+        })
+    }
+}
+
+#Preview("ToolView") {
     ToolView()
         .environmentObject(Printer(url: URL(string:"ws://192.168.88.39:7125")!))
 }
