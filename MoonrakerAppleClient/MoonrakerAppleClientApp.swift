@@ -7,6 +7,10 @@
 
 import SwiftUI
 
+struct PreviewEnvironment {
+    static let printer = Printer(url: URL(string:"ws://192.168.88.39:7125/websocket")!)
+}
+
 @main
 struct MoonrakerAppleClientApp: App {
     //TODO: add array of printers, change "printer" to "selectedPrinter"
