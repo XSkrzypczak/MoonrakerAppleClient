@@ -317,7 +317,10 @@ extension Printer {
                         self.toolhead.extruder = extruder
                     }
                     if let position = toolheadData["position"] as? [Any] {
-                        self.toolhead.position = convertToDoubleArray(position)
+                        self.toolhead.position[.x] = getDoubleValue(position[0])
+                        self.toolhead.position[.y] = getDoubleValue(position[1])
+                        self.toolhead.position[.z] = getDoubleValue(position[2])
+                        self.toolhead.position[.e] = getDoubleValue(position[3])
                     }
                     if let maxVelocity = toolheadData["max_velocity"] {
                         self.toolhead.maxVelocity = getDoubleValue(maxVelocity)
