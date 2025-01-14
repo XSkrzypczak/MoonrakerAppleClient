@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct PreviewEnvironment {
-    static let printer = Printer(url: URL(string:"ws://192.168.88.39:7125/websocket")!)
+    static let printer: Printer = Printer(url: URL(string:"ws://192.168.88.39:7125/websocket")!)
 }
 
 @main
