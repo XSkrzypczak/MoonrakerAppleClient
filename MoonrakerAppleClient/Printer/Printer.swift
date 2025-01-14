@@ -10,7 +10,6 @@ import Starscream
 //TODO: fork AnyCodable and add privacy manifest
 import AnyCodable
 
-//TODO: Add thrown error handling
 class Printer: WebSocketDelegate, ObservableObject {
     private let socket: WebSocket
     private let url: URL
@@ -20,6 +19,8 @@ class Printer: WebSocketDelegate, ObservableObject {
     private var expectedResponses: [Int: CheckedContinuation<AnyCodable, Error>] = [:]
     //store request we want to send
     private var pendingRequests: [Int: CheckedContinuation<Void, Error>] = [:]
+    
+    @Published var errors: [PrinterError] = []
     
     //store printer info
     @Published var klippyStatus: KlippyStatus = .null
