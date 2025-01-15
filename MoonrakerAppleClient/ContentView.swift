@@ -21,7 +21,7 @@ struct ContentView: View {
                 if !printer.errors.isEmpty {
                     ForEach(printer.errors) { error in
                         Printer.ErrorPopup(
-                            title: error.title,
+                            domain: error.domain,
                             message: error.message,
                             dismiss: {
                                 printer.dismissErrorPopup(error)

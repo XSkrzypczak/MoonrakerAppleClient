@@ -10,18 +10,18 @@ import SwiftUI
 extension Printer {
     struct PrinterError: Identifiable {
         let id: UUID = UUID()
-        let title: String
+        let domain: String
         let message: String
     }
     
     struct ErrorPopup: View {
-        let title: String
+        let domain: String
         let message: String
         var dismiss: () -> Void = { }
         
         var body: some View {
             VStack {
-                Text(title)
+                Text(domain)
                     .font(.headline)
                     .padding()
                 Text(message)
@@ -52,5 +52,5 @@ extension Printer {
 }
 
 #Preview {
-    Printer.ErrorPopup(title: "Title", message: "Message")
+    Printer.ErrorPopup(domain: "Domain", message: "Message")
 }
