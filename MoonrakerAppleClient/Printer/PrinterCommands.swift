@@ -11,8 +11,9 @@ import Foundation
 extension Printer {
     func runGCode(_ gcode: String) async {
         do {
-            let response = try await getRequest(method: "printer.gcode.script", params: [Param(key: "script", values: gcode)]).value
-            print(response)
+            canSendGCode = false
+            try await sendRequest(method: "printer.gcode.script", params: [Param(key: "script", values: gcode)])
+            canSendGCode = true
             gcodes.append(GCode(message: gcode, time: Double(Date().timeIntervalSince1970), type: .command))
         } catch {
             print("Error sending GCode: \(error)")
