@@ -15,7 +15,6 @@ class Printer: WebSocketDelegate, ObservableObject {
     private let url: URL
     var isConnected: Bool = false
     var canSendRequest: Bool = false
-    var canSendGCode: Bool = false
     //store responses we wait for
     private var expectedResponses: [Int: CheckedContinuation<AnyCodable, Error>] = [:]
     //store request we want to send
@@ -117,7 +116,6 @@ class Printer: WebSocketDelegate, ObservableObject {
         case .connected(let headers):
             isConnected = true
             canSendRequest = true
-            canSendGCode = true
             print("websocket is connected: \(headers)")
             Task {
                 await initializeSubscriptions()
@@ -125,7 +123,6 @@ class Printer: WebSocketDelegate, ObservableObject {
         case .disconnected(let reason, let code):
             isConnected = false
             canSendRequest = false
-            canSendGCode = false
             for continuation in expectedResponses {
                 continuation.value.resume(throwing: WebSocketEvent.disconnected(reason, code) as! Error)
                 expectedResponses.removeAll()
