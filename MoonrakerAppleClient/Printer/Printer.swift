@@ -15,6 +15,7 @@ class Printer: WebSocketDelegate, ObservableObject {
     private let url: URL
     var isConnected: Bool = false
     var canSendRequest: Bool = false
+    var canSendGCode: Bool = false
     //store responses we wait for
     private var expectedResponses: [Int: CheckedContinuation<AnyCodable, Error>] = [:]
     //store request we want to send
@@ -116,6 +117,7 @@ class Printer: WebSocketDelegate, ObservableObject {
         case .connected(let headers):
             isConnected = true
             canSendRequest = true
+            canSendGCode = true
             print("websocket is connected: \(headers)")
             Task {
                 await initializeSubscriptions()
@@ -123,6 +125,7 @@ class Printer: WebSocketDelegate, ObservableObject {
         case .disconnected(let reason, let code):
             isConnected = false
             canSendRequest = false
+            canSendGCode = false
             for continuation in expectedResponses {
                 continuation.value.resume(throwing: WebSocketEvent.disconnected(reason, code) as! Error)
                 expectedResponses.removeAll()
@@ -266,8 +269,12 @@ class Printer: WebSocketDelegate, ObservableObject {
                     case "notify_status_update":
                         handleStatusUpdate(json.params?.value ?? nil)
                     case "notify_gcode_response":
-                        //TODO: Add handling of all types of responses
+                        let response = (json.params?.value as! [String])[0]
+                        if response.starts(with: "//") {
+                            gcodes.append(GCode(message: response, time: Double(Date.now.timeIntervalSince1970), type: .response))
+                        }
                         print("Got gcode response: \((json.params?.value as! [String])[0])")
+                        
                     default :
                         break
                     }
