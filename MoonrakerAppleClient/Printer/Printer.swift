@@ -269,6 +269,9 @@ class Printer: WebSocketDelegate, ObservableObject {
                         let response = (json.params?.value as! [String])[0]
                         if response.starts(with: "//") {
                             gcodes.append(GCode(message: response, time: Double(Date.now.timeIntervalSince1970), type: .response))
+                        } else if response.starts(with: "!!") {
+                            throwError(PrinterError(domain: "GCode Response", message: response))
+                            gcodes.append(GCode(message: response, time: Double(Date.now.timeIntervalSince1970), type: .response))
                         }
                         print("Got gcode response: \((json.params?.value as! [String])[0])")
                         
